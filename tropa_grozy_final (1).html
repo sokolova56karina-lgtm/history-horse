@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Тропа сквозь грозу</title>
+<style>
+:root{--pad:26px}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#05060a}
+body{font-family:Georgia,'Times New Roman',serif;color:#e8e4d8;-webkit-user-select:none;user-select:none}
+#stage{position:fixed;inset:0;overflow:hidden}
+/* ===== сцены-палитры ===== */
+#sky{position:absolute;inset:0;transition:background 2.2s ease;z-index:0}
+.sc-title #sky{background:linear-gradient(#0a0d1f 0%,#141a38 45%,#2b2140 75%,#5a3a44 100%)}
+.sc-dawn  #sky{background:linear-gradient(#1a2245 0%,#33406e 40%,#8a6a7e 78%,#d99a6e 100%)}
+.sc-day   #sky{background:linear-gradient(#3d4a58 0%,#5c6b74 45%,#8d9491 80%,#b8b09a 100%)}
+.sc-storm #sky{background:linear-gradient(#05060c 0%,#0d1220 50%,#1a1f30 80%,#232436 100%)}
+.sc-fork  #sky{background:linear-gradient(#0b1020 0%,#1a2238 55%,#3a3348 85%,#4a3a44 100%)}
+.sc-forest#sky{background:linear-gradient(#04070a 0%,#0a140e 50%,#122016 85%,#1a2c1e 100%)}
+.sc-river #sky{background:linear-gradient(#060a16 0%,#0e162c 50%,#1c2440 80%,#28304e 100%)}
+.sc-ret   #sky{background:linear-gradient(#14203c 0%,#2a3a5e 45%,#5e6a8e 80%,#c9a684 100%)}
+.sc-gold  #sky{background:linear-gradient(#2a3050 0%,#7a6a86 35%,#c99a6e 70%,#f2c98a 100%)}
+/* ===== луна, звёзды ===== */
+#moon{position:absolute;top:9%;right:14%;width:72px;height:72px;border-radius:50%;
+ background:radial-gradient(circle at 38% 38%,#fdf6e3 55%,#c9c2a8 100%);
+ box-shadow:0 0 60px 22px rgba(253,246,227,.28);opacity:0;transition:opacity 2s;z-index:1}
+#moon .crater{position:absolute;border-radius:50%;background:rgba(120,110,90,.35)}
+.sc-dawn #moon,.sc-title #moon,.sc-river #moon,.sc-ret #moon{opacity:.9}
+.sc-gold #moon,.sc-day #moon,.sc-storm #moon,.sc-forest #moon,.sc-fork #moon{opacity:0}
+#stars{position:absolute;inset:0;z-index:1;opacity:0;transition:opacity 2s}
+.sc-title #stars,.sc-dawn #stars,.sc-river #stars,.sc-ret #stars{opacity:1}
+.star{position:absolute;background:#fff;border-radius:50%;animation:tw 3s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+/* ===== пейзаж SVG ===== */
+#far,#mid,#horses{position:absolute;left:0;bottom:0;width:100%;z-index:2;transition:opacity 2s}
+#mid{z-index:3}#horses{z-index:4}
+#far{filter:blur(2px)}
+#far .fill{fill:var(--cFar)}#mid .fill{fill:var(--cMid)}
+.sc-title{--cFar:#0d1226;--cMid:#070a16;--cHorse:#03050c}
+.sc-dawn {--cFar:#1c2440;--cMid:#111830;--cHorse:#0a0e1c}
+.sc-day  {--cFar:#4a5560;--cMid:#2f3a40;--cHorse:#20282c}
+.sc-storm{--cFar:#0a0e18;--cMid:#04060c;--cHorse:#020308}
+.sc-fork {--cFar:#141a2e;--cMid:#0a0e1c;--cHorse:#050810}
+.sc-forest{--cFar:#0a1410;--cMid:#050a08;--cHorse:#020404}
+.sc-river{--cFar:#101a30;--cMid:#0a1020;--cHorse:#050a14}
+.sc-ret  {--cFar:#2c3a58;--cMid:#1a2438;--cHorse:#101826}
+.sc-gold {--cFar:#6a5a4e;--cMid:#3c3028;--cHorse:#241c16}
+/* река: мерцающая полоса */
+#riverband{position:absolute;left:0;right:0;bottom:0;height:26%;z-index:3;opacity:0;transition:opacity 2s;
+ background:linear-gradient(#141c34,#0a1020);overflow:hidden}
+.sc-river #riverband{opacity:1}
+#riverband .shimmer{position:absolute;inset:0;opacity:.5;
+ background:repeating-linear-gradient(90deg,transparent 0 34px,rgba(160,190,255,.10) 34px 40px,transparent 40px 78px);
+ animation:shim 5s linear infinite}
+@keyframes shim{to{transform:translateX(78px)}}
+/* стволы леса */
+#trunks{position:absolute;inset:0;z-index:4;opacity:0;transition:opacity 2s}
+.sc-forest #trunks{opacity:1}
+#trunks div{position:absolute;top:0;bottom:0;background:#03060a;border-radius:6px}
+/* ===== туман ===== */
+.fog{position:absolute;left:-20%;width:140%;height:34%;z-index:5;filter:blur(26px);opacity:.35;
+ background:linear-gradient(rgba(200,210,230,.16),transparent)}
+#fog1{bottom:2%;animation:fogm 26s ease-in-out infinite alternate}
+#fog2{bottom:10%;animation:fogm 38s ease-in-out infinite alternate-reverse;opacity:.22}
+@keyframes fogm{from{transform:translateX(-4%)}to{transform:translateX(6%)}}
+/* ===== частицы, вспышка, виньетка ===== */
+#fx{position:absolute;inset:0;z-index:7;pointer-events:none}
+#flash{position:absolute;inset:0;background:#eef2ff;z-index:8;opacity:0;pointer-events:none}
+#flash.go{animation:fl .5s ease-out}
+@keyframes fl{0%{opacity:0}8%{opacity:.95}22%{opacity:.1}38%{opacity:.8}100%{opacity:0}}
+#vign{position:absolute;inset:0;z-index:9;pointer-events:none;
+ background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+/* ===== тряска ===== */
+.shake-s{animation:shs .35s linear}
+.shake-b{animation:shb .7s linear}
+@keyframes shs{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,3px)}40%{transform:translate(4px,-3px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(3px,2px)}}
+@keyframes shb{0%,100%{transform:translate(0,0)}10%{transform:translate(-10px,7px)}22%{transform:translate(10px,-8px)}35%{transform:translate(-9px,-6px)}48%{transform:translate(8px,6px)}62%{transform:translate(-6px,4px)}76%{transform:translate(5px,-4px)}90%{transform:translate(-3px,2px)}}
+/* ===== глава ===== */
+#chap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;
+ pointer-events:none;opacity:0;transition:opacity .8s}
+#chap.show{opacity:1}
+#chapT{font-size:clamp(22px,4.2vw,40px);letter-spacing:.14em;text-transform:uppercase;color:#f0e8d4;
+ text-shadow:0 2px 24px rgba(0,0,0,.8);border-top:1px solid rgba(240,232,212,.4);border-bottom:1px solid rgba(240,232,212,.4);padding:18px 34px}
+/* ===== интерфейс текста ===== */
+#ui{position:absolute;left:0;right:0;bottom:0;z-index:12;padding:0 var(--pad) calc(var(--pad) + 8px);display:none}
+#who{max-width:900px;margin:0 auto;padding:0 4px 7px 26px;font-size:clamp(15px,2.2vw,19px);color:#e8c88a;letter-spacing:.06em;min-height:1.5em;font-family:Georgia,serif;font-style:italic;font-weight:bold;text-shadow:0 2px 10px rgba(0,0,0,.95)}
+#dlg{max-width:900px;margin:0 auto;background:linear-gradient(rgba(8,10,18,.86),rgba(8,10,18,.94));
+ border:1px solid rgba(232,228,216,.16);border-radius:12px;padding:20px 26px;min-height:96px;
+ font-size:clamp(16px,2.5vw,21px);line-height:1.62;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+#dlg.narr{font-style:italic;color:#cfd3da}
+#dlg.speech{font-style:normal;color:#f4f0e4}
+#choices{max-width:900px;margin:10px auto 0;display:none;flex-direction:column;gap:10px}
+#choices button{font-family:Georgia,serif;font-size:clamp(15px,2.2vw,19px);color:#f0e8d4;cursor:pointer;
+ background:linear-gradient(rgba(30,34,52,.9),rgba(16,18,30,.9));border:1px solid rgba(232,200,138,.45);
+ border-radius:10px;padding:13px 22px;transition:all .25s}
+#choices button:hover{background:rgba(232,200,138,.18);transform:translateX(6px)}
+#hint{position:absolute;right:calc(var(--pad) + 14px);bottom:calc(var(--pad) + 12px);color:#e8c88a;font-size:22px;opacity:0;animation:hintp 1.4s ease-in-out infinite;z-index:13}
+#hint.on{opacity:1}
+@keyframes hintp{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+/* ===== тайтл и финал ===== */
+.screen{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+#title-screen h1{font-size:clamp(30px,6vw,58px);letter-spacing:.1em;text-shadow:0 2px 30px rgba(0,0,0,.9);font-weight:normal}
+#title-screen .sub{margin-top:14px;font-style:italic;color:#b9b2c4;letter-spacing:.2em;font-size:clamp(13px,2vw,17px)}
+.btn{margin-top:38px;font-family:Georgia,serif;font-size:clamp(16px,2.4vw,20px);color:#f0e8d4;cursor:pointer;
+ background:linear-gradient(rgba(40,40,64,.85),rgba(18,20,34,.9));border:1px solid rgba(232,200,138,.55);
+ border-radius:12px;padding:15px 44px;letter-spacing:.08em;transition:all .3s}
+.btn:hover{background:rgba(232,200,138,.2);box-shadow:0 0 34px rgba(232,200,138,.25)}
+#endscreen{display:none;background:rgba(4,5,10,.82);backdrop-filter:blur(3px)}
+#endtext{font-size:clamp(18px,3vw,26px);font-style:italic;line-height:1.7;max-width:720px}
+#endname{color:#e8c88a;border-bottom:1px dashed rgba(232,200,138,.6);padding:0 6px}
+#pname{margin-top:26px;font-family:Georgia,serif;font-size:clamp(16px,2.4vw,20px);text-align:center;color:#f4f0e4;
+ background:rgba(255,255,255,.06);border:1px solid rgba(232,200,138,.4);border-radius:10px;padding:11px 18px;outline:none;width:min(320px,80vw)}
+#pname::placeholder{color:#8f8a9c;font-style:italic}
+#again{margin-top:22px}
+.ded-top{font-size:clamp(14px,2vw,18px);color:#b9b2c4;letter-spacing:.18em}
+.ded-mid{margin-top:10px;font-size:clamp(11px,1.6vw,14px);color:rgba(233,228,216,.55);letter-spacing:.3em;text-transform:uppercase}
+.ded-name{margin-top:18px;font-size:clamp(22px,4vw,36px);color:#e8c88a;letter-spacing:.08em;text-shadow:0 2px 24px rgba(0,0,0,.9)}
+.ded-line{width:min(220px,50vw);border:none;border-top:1px solid rgba(232,200,138,.35);margin:26px auto 0}
+#ded-screen .btn{margin-top:40px}
+#endscreen .ded-name{margin-top:12px}
+/* ===== кнопки ===== */
+#mute{position:absolute;top:16px;right:16px;z-index:30;font-size:20px;background:rgba(10,12,22,.6);
+ border:1px solid rgba(232,228,216,.25);border-radius:50%;width:44px;height:44px;cursor:pointer;color:#e8e4d8}
+#mute:hover{border-color:rgba(232,200,138,.6)}
+</style></head>
+<body>
+<div id="stage" class="sc-title">
+ <div id="sky"></div>
+ <div id="stars"></div>
+ <div id="moon"><div class="crater" style="width:14px;height:14px;top:18px;left:20px"></div><div class="crater" style="width:9px;height:9px;top:40px;left:44px"></div></div>
+ <svg id="far" viewBox="0 0 1000 260" preserveAspectRatio="xMidYMax slice">
+   <path class="fill" d="M0,190 Q120,110 260,160 T520,120 T780,170 T1000,110 V260 H0 Z"/>
+ </svg>
+ <svg id="mid" viewBox="0 0 1000 260" preserveAspectRatio="xMidYMax slice">
+   <g id="spruce-group"></g>
+   <path class="fill" d="M0,225 Q180,185 360,210 T640,195 T1000,215 V260 H0 Z"/>
+ </svg>
+ <svg id="horses" viewBox="0 0 1000 260" preserveAspectRatio="xMidYMax slice">
+   <g id="horse-group"></g>
+ </svg>
+ <div id="riverband"><div class="shimmer"></div></div>
+ <div id="trunks"></div>
+ <div class="fog" id="fog1"></div>
+ <div class="fog" id="fog2"></div>
+ <canvas id="fx"></canvas>
+ <div id="flash"></div>
+ <div id="vign"></div>
+ <div id="chap"><div id="chapT"></div></div>
+ <div id="ui">
+   <div id="who"></div>
+   <div id="dlg"></div>
+   <div id="choices"></div>
+ </div>
+ <div id="hint">▾</div>
+ <div class="screen" id="title-screen">
+   <h1>ТРОПА СКВОЗЬ ГРОЗУ</h1>
+   <p class="sub">история одного табуна</p>
+   <button class="btn" id="start">Начать историю</button>
+ </div>
+ <div class="screen" id="ded-screen" style="display:none">
+   <p class="ded-top">С наилучшими пожеланиями</p>
+   <p class="ded-mid">посвящается</p>
+   <p class="ded-name">Измученному Кошмарами</p>
+   <button class="btn" id="dedGo">К истории</button>
+ </div>
+ <div class="screen" id="endscreen">
+   <p class="ded-top">С наилучшими пожеланиями</p>
+   <p class="ded-mid">посвящается</p>
+   <p class="ded-name">Измученному Кошмарами</p>
+   <hr class="ded-line">
+   <p id="endtext"></p>
+   <p id="endtext"></p>
+   <input id="pname" placeholder="впишите имя здесь" autocomplete="off">
+   <button class="btn" id="again">Пройти заново</button>
+ </div>
+ <button id="mute" title="звук">🔊</button>
+</div>
+<script>
+const SCENES = {
+ "ch1": {
+  "scene": "dawn",
+  "ch": "Глава I. Двадцатая зима",
+  "wind": 0.05,
+  "next": "ch2",
+  "particles": {
+   "rain": 0,
+   "fireflies": 0,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "Рассвет пришёл в долину раньше звука: сначала посветлел восток, потом проступили холмы, и только потом просохла роса на хребтах."
+   },
+   {
+    "s": "Пепел",
+    "t": "Двадцать зим я встречаю здесь рассвет. И двадцать зим считаю."
+   },
+   {
+    "t": "Она шла вдоль спящих боков и трогала ноздрями каждую гриву: один, два, три…"
+   },
+   {
+    "s": "Пепел",
+    "t": "Счёт — не привычка. Счёт — это то, что остаётся, когда всё остальное можно потерять."
+   },
+   {
+    "s": "Буран",
+    "t": "Опять считаешь, Пепел."
+   },
+   {
+    "s": "Пепел",
+    "t": "Двадцать три. Полный счёт."
+   },
+   {
+    "s": "Буран",
+    "t": "В такие рассветы я считаю не лошадей, а свои годы. Их тоже двадцать три. Совпадение, которое мне не нравится."
+   },
+   {
+    "s": "Пепел",
+    "t": "Ты вечно ищешь в числах дурные знаки."
+   },
+   {
+    "s": "Буран",
+    "t": "А они вечно находятся."
+   },
+   {
+    "s": "Искра",
+    "t": "О чём вы?"
+   },
+   {
+    "s": "Пепел",
+    "t": "О том, что счёт сходится. Спи ещё немного, Искра."
+   },
+   {
+    "t": "Жеребёнок снова уснул, прижавшись к тёплому боку. В ту ночь у него ещё было время спать."
+   }
+  ]
+ },
+ "ch2": {
+  "scene": "day",
+  "ch": "Глава II. День перед грозой",
+  "wind": 0.09,
+  "next": "storm",
+  "particles": {
+   "rain": 0,
+   "fireflies": 0,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "День шёл как обычно: трава, вода, тень от одинокого дуба на дальнем склоне. Но к полудню ветер переменился, и небо затянуло низкой, тяжёлой пеленой."
+   },
+   {
+    "s": "Пепел",
+    "t": "Ветер сегодня неправильно пахнет."
+   },
+   {
+    "s": "Буран",
+    "t": "Озоном. Гроза идёт не по ветру — за нами."
+   },
+   {
+    "s": "Пепел",
+    "t": "Тогда к ночи нам нужно быть у дальних буков. Старые корни держат землю лучше молодых копыт."
+   },
+   {
+    "s": "Буран",
+    "t": "Собирай табун. Я пойду последним — кто-то должен смотреть в спину."
+   },
+   {
+    "t": "Искра носился по лугу, гоняя тень от собственного хвоста, и не замечал ни ветра, ни взрослых голосов."
+   },
+   {
+    "s": "Пепел",
+    "t": "Искра! Ко мне. Сегодня — рядом, слышишь? Сегодня — рядом."
+   },
+   {
+    "s": "Искра",
+    "t": "Рядом. Я понял!"
+   },
+   {
+    "t": "Так она думала тогда. Табун ушёл к букам, когда солнце ещё стояло над холмами, — и всё равно опоздал на один гром."
+   }
+  ]
+ },
+ "storm": {
+  "scene": "storm",
+  "ch": "Глава III. Гроза",
+  "wind": 0.28,
+  "next": "fork",
+  "particles": {
+   "rain": 1,
+   "fireflies": 0,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "Небо сгинуло. Не потемнело — сгинуло, будто кто-то задул лампу над всей долиной.",
+    "fx": "thunder"
+   },
+   {
+    "t": "Табун сжался под буками. Пепел шла вдоль рядов и считала."
+   },
+   {
+    "s": "Пепел",
+    "t": "Двадцать один. Двадцать два…"
+   },
+   {
+    "t": "Вспышка на мгновение разрезала темноту — и погасла.",
+    "fx": "lightning"
+   },
+   {
+    "s": "Пепел",
+    "t": "Двадцать два."
+   },
+   {
+    "t": "Она начала снова. Медленнее, чем когда-либо."
+   },
+   {
+    "s": "Пепел",
+    "t": "Один. Два. Три… Двадцать два."
+   },
+   {
+    "s": "Буран",
+    "t": "Пепел."
+   },
+   {
+    "s": "Пепел",
+    "t": "Считай лучше, Буран."
+   },
+   {
+    "s": "Буран",
+    "t": "Считать не надо. Искры нет."
+   },
+   {
+    "t": "Слово ударило сильнее грома. Ливень вдруг показался тёплым — потому что всё остальное стало холоднее."
+   },
+   {
+    "s": "Пепел",
+    "t": "Он был рядом, когда начался гром."
+   },
+   {
+    "s": "Буран",
+    "t": "Гром не спрашивает, кто был рядом."
+   },
+   {
+    "s": "Пепел",
+    "t": "Тогда я пойду его спрашивать."
+   },
+   {
+    "t": "Ветер рвал с веток последнюю листву. Пепел вышла из-под буков одна — и скрылась в темноте."
+   }
+  ]
+ },
+ "fork": {
+  "scene": "fork",
+  "ch": "Глава IV. Развилка",
+  "wind": 0.2,
+  "particles": {
+   "rain": 0.5,
+   "fireflies": 0,
+   "embers": 0
+  },
+  "choices": [
+   {
+    "t": "Пойти в ольшаник — тёмный, но тихий",
+    "next": "forest"
+   },
+   {
+    "t": "Спуститься к реке — по следу вдоль берега",
+    "next": "river"
+   }
+  ],
+  "lines": [
+   {
+    "t": "Дорога раздваивалась у старого валуна: налево темнел ольшаник, направо вниз сбегала тропа вдоль реки."
+   },
+   {
+    "t": "Пепел остановилась и вдохнула мокрый, тяжёлый воздух."
+   },
+   {
+    "s": "Пепел",
+    "t": "Искра воды боится. Но береговую тропу он знает — я водила ею его в прошлом году."
+   },
+   {
+    "s": "Пепел",
+    "t": "А в ольшанике темно и тихо. Тем, кто мал, темно и тихо — уютно."
+   },
+   {
+    "t": "Дождь стучал по мёртвой листве. Пора было выбирать."
+   }
+  ]
+ },
+ "forest": {
+  "scene": "forest",
+  "ch": "Глава V. Чёрный лес",
+  "wind": 0.04,
+  "next": "forest2",
+  "particles": {
+   "rain": 0.15,
+   "fireflies": 26,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "В ольшанике гроза стала тише: каждый лист держал капли на себе, и дождь падал редко, но тяжело."
+   },
+   {
+    "t": "Пепел шла, задрав морду, и слушала. В темноте меж стволов плавали холодные зелёные искры светлячков."
+   },
+   {
+    "s": "Пепел",
+    "t": "Птицы молчат. Ни одна не дрогнула в кронах — значит, хищников рядом нет. Значит, можно идти не таясь."
+   },
+   {
+    "t": "Впереди лес пересекала старая канава, а правее, в низине, чернела гать — брёвна через ручей."
+   },
+   {
+    "s": "Пепел",
+    "t": "Канава быстрее. Но гать — над водой, а маленькие следы вода не стирает."
+   }
+  ]
+ },
+ "forest2": {
+  "scene": "forest",
+  "wind": 0.04,
+  "particles": {
+   "rain": 0.15,
+   "fireflies": 26,
+   "embers": 0
+  },
+  "choices": [
+   {
+    "t": "Перейти по гати — брёвна через ручей",
+    "next": "gat"
+   },
+   {
+    "t": "Прыгать через канаву — короткий путь",
+    "next": "ditch"
+   }
+  ],
+  "lines": [
+   {
+    "t": "Пепел постояла на развилке ещё немного. Дождь стихал — значит, времени оставалось мало."
+   }
+  ]
+ },
+ "gat": {
+  "scene": "forest",
+  "wind": 0.06,
+  "next": "find",
+  "particles": {
+   "rain": 0.1,
+   "fireflies": 18,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "Гать скрипела под копытами, как старая дверь в пустом доме."
+   },
+   {
+    "t": "Посередине бревно треснуло — коротко и сухо, как выстрел.",
+    "fx": "snap"
+   },
+   {
+    "s": "Пепел",
+    "t": "Только не сейчас. Только не под мной."
+   },
+   {
+    "t": "Бревно выдержало. Пепел перешла ручей и увидела то, что искала: примятую траву, сломанную ветку и тёплый ещё след."
+   },
+   {
+    "s": "Пепел",
+    "t": "Он прошёл здесь. Совсем недавно."
+   }
+  ]
+ },
+ "ditch": {
+  "scene": "forest",
+  "wind": 0.05,
+  "next": "find",
+  "particles": {
+   "rain": 0.1,
+   "fireflies": 18,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "Канава была глубока, а вода в ней — чёрная и злая. Пепел разбежалась и прыгнула."
+   },
+   {
+    "t": "На том берегу подломилась ветка — треск отозвался во всей чаще.",
+    "fx": "snap"
+   },
+   {
+    "s": "Пепел",
+    "t": "Кто здесь?"
+   },
+   {
+    "s": "Ёж",
+    "t": "Это я. Кому ещё в грозу шуршать в канаве?"
+   },
+   {
+    "s": "Пепел",
+    "t": "Ёж. Ты не видел жеребёнка? Рыжего, тонконогого."
+   },
+   {
+    "s": "Ёж",
+    "t": "Видел. Сидел у старого валуна и считал громы. Я ему сказал: считай, считай, до восемнадцати досчитаешь — зубы сводить станет."
+   },
+   {
+    "s": "Пепел",
+    "t": "И что он?"
+   },
+   {
+    "s": "Ёж",
+    "t": "Досчитал до семи и ушёл к реке. Сказал: там мать ищет, пока гром не кончился."
+   },
+   {
+    "s": "Пепел",
+    "t": "К реке… Спасибо, колючий."
+   },
+   {
+    "s": "Ёж",
+    "t": "Не за что. Но в следующий раз иди по гати: брёвна держат, я проверял. А канава — для молодых и глупых."
+   }
+  ]
+ },
+ "river": {
+  "scene": "river",
+  "ch": "Глава V. Река",
+  "wind": 0.3,
+  "next": "find",
+  "particles": {
+   "rain": 0.5,
+   "fireflies": 0,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "Река в грозу — это не вода. Это чёрная дорога, по которой несётся что-то тяжёлое и злое."
+   },
+   {
+    "s": "Пепел",
+    "t": "Искра! Искра!"
+   },
+   {
+    "t": "Только ветер отвечал — рвал её голос на части и уносил за поворот.",
+    "fx": "splash"
+   },
+   {
+    "t": "Пепел пошла вдоль берега, не сводя глаз с мокрого песка."
+   },
+   {
+    "t": "На песке — маленькие копытца. Свежие. Вода ещё не успела их сгладить."
+   },
+   {
+    "s": "Пепел",
+    "t": "Он прошёл здесь. Совсем недавно."
+   }
+  ]
+ },
+ "find": {
+  "scene": "forest",
+  "ch": "Глава VI. Искра",
+  "wind": 0.12,
+  "next": "ret",
+  "particles": {
+   "rain": 0.05,
+   "fireflies": 14,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "Под старым валуном, свернувшись, лежал рыжий бок. Мокрая грива. Закрытые глаза.",
+    "fx": "shake"
+   },
+   {
+    "s": "Пепел",
+    "t": "Искра!"
+   },
+   {
+    "s": "Искра",
+    "t": "…Пепел? Я думал, ты меня уже не найдёшь."
+   },
+   {
+    "s": "Пепел",
+    "t": "Я считала. С двадцатью тремя боками и без тебя счёт не сходится. Понимаешь? Не сходится."
+   },
+   {
+    "s": "Искра",
+    "t": "Я сел и ждал. Ты говорила: если потеряешься — садись и жди. Я вспомнил."
+   },
+   {
+    "s": "Пепел",
+    "t": "Ты сел и ждал в грозу. Один."
+   },
+   {
+    "s": "Искра",
+    "t": "Я считал громы, чтобы не бояться. Досчитал до семи."
+   },
+   {
+    "s": "Пепел",
+    "t": "Семь громов. Целая вечность."
+   },
+   {
+    "s": "Искра",
+    "t": "А потом кончилось место в счёте, и я задремал."
+   },
+   {
+    "s": "Пепел",
+    "t": "Запомни, Искра: храбрость — это не когда не страшно. Это когда страшно, а ты всё равно сидишь и ждёшь. Ждёшь, потому что тебя будут искать."
+   },
+   {
+    "s": "Искра",
+    "t": "Ты нашла меня за семь громов."
+   },
+   {
+    "s": "Пепел",
+    "t": "Я нашла тебя за один счёт до двадцати трёх."
+   }
+  ]
+ },
+ "ret": {
+  "scene": "ret",
+  "ch": "Глава VII. Обратная тропа",
+  "wind": 0.08,
+  "next": "fin",
+  "particles": {
+   "rain": 0,
+   "fireflies": 0,
+   "embers": 0
+  },
+  "lines": [
+   {
+    "t": "Гроза уходила на север, как гость, который всё сломал и не извинился."
+   },
+   {
+    "t": "Они шли медленно: жеребёнок устал, а Пепел не хотела, чтобы дорога домой кончалась слишком быстро."
+   },
+   {
+    "s": "Искра",
+    "t": "Пепел, а ты боялась?"
+   },
+   {
+    "s": "Пепел",
+    "t": "Я считала."
+   },
+   {
+    "s": "Искра",
+    "t": "Это не ответ."
+   },
+   {
+    "s": "Пепел",
+    "t": "Это и есть ответ. Пока считаешь — не боишься."
+   },
+   {
+    "s": "Искра",
+    "t": "А когда кончается счёт?"
+   },
+   {
+    "s": "Пепел",
+    "t": "Тогда находишь новое, что можно сосчитать. Или кого."
+   },
+   {
+    "t": "За спиной осталась река, справа темнел ольшаник, а впереди светлело — не заря ещё, но обещание зари."
+   },
+   {
+    "s": "Пепел",
+    "t": "Смотри. Тропа, по которой мы прошли, останется в росе до утра."
+   },
+   {
+    "s": "Искра",
+    "t": "А потом?"
+   },
+   {
+    "s": "Пепел",
+    "t": "Потом по ней пойдут другие. И будут знать: здесь кто-то однажды вернулся домой."
+   }
+  ]
+ },
+ "fin": {
+  "scene": "gold",
+  "ch": "Глава VIII. Полный счёт",
+  "wind": 0.04,
+  "end": true,
+  "particles": {
+   "rain": 0,
+   "fireflies": 0,
+   "embers": 34
+  },
+  "lines": [
+   {
+    "t": "Долина проснулась золотой. Свет лежал на траве, как прогретая вода."
+   },
+   {
+    "s": "Буран",
+    "t": "Двадцать три."
+   },
+   {
+    "s": "Пепел",
+    "t": "Двадцать три."
+   },
+   {
+    "s": "Буран",
+    "t": "Полный счёт."
+   },
+   {
+    "t": "Буран отвернулся: старые жеребцы не показывают, что переживали. Но Пепел заметила, как он впервые за двадцать зим шагнул с линии вожака и пропустил жеребёнка вперёд."
+   },
+   {
+    "s": "Искра",
+    "t": "Пепел, а правда, что ты двадцать зим считаешь боков?"
+   },
+   {
+    "s": "Пепел",
+    "t": "Правда. Но сегодняшнее утро — первое, когда счёт сошёлся не по привычке. А по счастью."
+   },
+   {
+    "t": "Тропа, протоптанная за ночь, оставалась в росе. Она вела от реки, через лес и мимо старого валуна — домой. Туда, где никто не остаётся один."
+   }
+  ]
+ }
+};
+
+/* ===================== состояние движка ===================== */
+let cur=null, li=0, typing=false, typeTimer=null, pendingLine=false, pendingTimer=null;
+let chapterActive=false, chapterTimer=null, choicesShown=false, started=false;
+
+const stage=document.getElementById('stage');
+const dlg=document.getElementById('dlg'), who=document.getElementById('who');
+const NAMEC={'Пепел':'#9fb4c7','Буран':'#b6c3cf','Искра':'#e8b34b','Искры':'#e8b34b','Ёж':'#8fae7a'};
+function hlNames(t){let out=t;for(const n in NAMEC){out=out.split(n).join('<span style="color:'+NAMEC[n]+'">'+n+'</span>');}return out;}
+const choiceBox=document.getElementById('choices');
+const chap=document.getElementById('chap'), chapT=document.getElementById('chapT');
+const hint=document.getElementById('hint');
+const ui=document.getElementById('ui');
+const flash=document.getElementById('flash');
+
+/* ===================== визуальные слои ===================== */
+(function buildScenery(){
+  // звёзды
+  const starBox=document.getElementById('stars');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('div'); s.className='star';
+    const sz=1+Math.random()*1.8;
+    s.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+(Math.random()*100)+'%;top:'+(Math.random()*55)+'%;animation-delay:'+(Math.random()*3)+'s';
+    starBox.appendChild(s);
+  }
+  // ели на среднем плане
+  const spr=document.getElementById('spruce-group');
+  const sprPath='M0,260 L8,208 L3,208 L13,168 L8,168 L19,120 L14,120 L27,58 L40,120 L35,120 L46,168 L41,168 L51,208 L46,208 L54,260 Z';
+  let sprSvg='';
+  for(let i=0;i<14;i++){
+    const x=20+Math.random()*960, sc=.5+Math.random()*.9;
+    sprSvg+='<path class="fill" transform="translate('+x+',0) scale('+sc+')" d="'+sprPath+'"/>';
+  }
+  spr.innerHTML=sprSvg;
+  // стволы леса
+  const tr=document.getElementById('trunks');
+  for(let i=0;i<11;i++){
+    const d=document.createElement('div');
+    const w=5+Math.random()*9, x=Math.random()*98;
+    d.style.cssText='left:'+x+'%;width:'+w+'px;transform:skewX('+(Math.random()*4-2)+'deg)';
+    tr.appendChild(d);
+  }
+  // лошади: стоят и пасутся
+  const stand='M12,34 L40,30 L56,28 L68,14 L71,7 L76,10 L86,17 L80,22 L66,28 L60,34 L58,42 L56,78 L52,78 L52,44 L38,48 L34,78 L30,78 L31,46 L22,42 L12,38 L6,58 L2,56 L10,36 Z';
+  const graze='M12,34 L40,30 L56,28 L64,30 L70,44 L78,58 L74,62 L64,52 L56,40 L54,42 L54,78 L50,78 L50,44 L38,48 L34,78 L30,78 L31,46 L22,42 L12,38 L6,58 L2,56 L10,36 Z';
+  const hg=document.getElementById('horse-group');
+  hg.innerHTML=
+    '<path class="fill" fill-rule="evenodd" transform="translate(300,148) scale(1.5)" d="'+graze+'"/>'+
+    '<path class="fill" fill-rule="evenodd" transform="translate(560,140) scale(1.7)" d="'+stand+'"/>'+
+    '<path class="fill" fill-rule="evenodd" transform="translate(700,160) scale(1.15)" d="'+graze+'"/>'+
+    '<path class="fill" fill-rule="evenodd" transform="translate(150,168) scale(.9)" d="'+stand+'"/>';
+})();
+
+/* ===================== частицы ===================== */
+const fx=document.getElementById('fx'); const fctx=fx.getContext('2d');
+let parts=[], pCfg={rain:0,fireflies:0,embers:0}, pCur={rain:0,fireflies:0,embers:0};
+function resizeFx(){fx.width=innerWidth;fx.height=innerHeight;}
+resizeFx(); addEventListener('resize',resizeFx);
+function spawn(kind){
+  if(kind==='rain') return {k:'r',x:Math.random()*(fx.width+200)-100,y:Math.random()*fx.height,v:11+Math.random()*7,l:8+Math.random()*9};
+  if(kind==='fireflies') return {k:'f',x:Math.random()*fx.width,y:fx.height*.35+Math.random()*fx.height*.5,ph:Math.random()*6.28,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.3};
+  if(kind==='embers') return {k:'e',x:Math.random()*fx.width,y:fx.height+Math.random()*60,v:.6+Math.random()*1.1,ph:Math.random()*6.28};
+}
+function drawFx(){
+  try{
+    fctx.clearRect(0,0,fx.width,fx.height);
+    ['rain','fireflies','embers'].forEach(kind=>{ pCur[kind]+= (pCfg[kind]-pCur[kind])*.04; });
+    const wantR=Math.round(pCur.rain*260), wantF=Math.round(pCur.fireflies), wantE=Math.round(pCur.embers);
+    const cnt={r:parts.filter(p=>p.k==='r').length,f:parts.filter(p=>p.k==='f').length,e:parts.filter(p=>p.k==='e').length};
+    if(cnt.r<wantR) for(let i=0;i<wantR-cnt.r;i++) parts.push(spawn('rain'));
+    if(cnt.r>wantR+18) parts=parts.filter((p,i)=>p.k!=='r'||i%2===0);
+    if(cnt.f<wantF) parts.push(spawn('fireflies'));
+    if(cnt.f>wantF) parts=parts.filter(p=>p.k!=='f'||Math.random()>.06);
+    if(cnt.e<wantE) parts.push(spawn('embers'));
+    if(cnt.e>wantE) parts=parts.filter(p=>p.k!=='e'||Math.random()>.06);
+    parts.forEach(p=>{
+      if(p.k==='r'){
+        p.y+=p.v; p.x+=p.v*.35;
+        if(p.y>fx.height){p.y=-20;p.x=Math.random()*(fx.width+200)-100;}
+        fctx.strokeStyle='rgba(170,190,230,.5)'; fctx.lineWidth=1;
+        fctx.beginPath(); fctx.moveTo(p.x,p.y); fctx.lineTo(p.x-p.l*.35,p.y-p.l); fctx.stroke();
+      } else if(p.k==='f'){
+        p.ph+=.03; p.x+=p.vx+Math.sin(p.ph)*.5; p.y+=p.vy+Math.cos(p.ph*.7)*.4;
+        if(p.x<0||p.x>fx.width) p.vx*=-1;
+        if(p.y<fx.height*.25||p.y>fx.height*.92) p.vy*=-1;
+        const a=.25+.55*Math.abs(Math.sin(p.ph*1.7));
+        fctx.fillStyle='rgba(190,255,140,'+a+')';
+        fctx.beginPath(); fctx.arc(p.x,p.y,1.6,0,6.283); fctx.fill();
+        fctx.fillStyle='rgba(190,255,140,'+(a*.14)+')';
+        fctx.beginPath(); fctx.arc(p.x,p.y,6,0,6.283); fctx.fill();
+      } else if(p.k==='e'){
+        p.y-=p.v; p.ph+=.04; p.x+=Math.sin(p.ph)*.7;
+        if(p.y<-20){p.y=fx.height+20;p.x=Math.random()*fx.width;}
+        const a=.3+.6*Math.abs(Math.sin(p.ph*2));
+        fctx.fillStyle='rgba(255,190,90,'+a+')';
+        fctx.beginPath(); fctx.arc(p.x,p.y,1.5,0,6.283); fctx.fill();
+        fctx.fillStyle='rgba(255,150,50,'+(a*.16)+')';
+        fctx.beginPath(); fctx.arc(p.x,p.y,5,0,6.283); fctx.fill();
+      }
+    });
+  }catch(e){}
+  requestAnimationFrame(drawFx);
+}
+drawFx();
+
+/* ===================== параллакс ===================== */
+addEventListener('mousemove',e=>{
+  const dx=(e.clientX/innerWidth-.5), dy=(e.clientY/innerHeight-.5);
+  document.getElementById('far').style.transform='translateX('+(dx*10)+'px)';
+  document.getElementById('mid').style.transform='translateX('+(dx*22)+'px)';
+  document.getElementById('horses').style.transform='translateX('+(dx*36)+'px)';
+  document.getElementById('riverband').style.transform='translateX('+(dx*22)+'px)';
+  document.getElementById('fog1').style.transform='translateX('+(dx*30-3)+'%)';
+});
+
+/* ===================== звук ===================== */
+let AC=null, master=null, windGain=null, windFilter=null, padGain=null, pads=[], windLevel=0, muted=false;
+function initAudio(){
+  if(AC) return;
+  try{
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    master=AC.createGain(); master.gain.value=.85; master.connect(AC.destination);
+    const buf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const src=AC.createBufferSource(); src.buffer=buf; src.loop=true;
+    windFilter=AC.createBiquadFilter(); windFilter.type='lowpass'; windFilter.frequency.value=380;
+    windGain=AC.createGain(); windGain.gain.value=0;
+    src.connect(windFilter); windFilter.connect(windGain); windGain.connect(master); src.start();
+    setInterval(()=>{ if(!AC||muted) return;
+      const t=AC.currentTime, target=Math.max(0,windLevel*(.6+Math.random()*.8));
+      windGain.gain.cancelScheduledValues(t);
+      windGain.gain.linearRampToValueAtTime(target,t+1.4+Math.random());
+    },2400);
+    padGain=AC.createGain(); padGain.gain.value=.05; padGain.connect(master);
+  }catch(e){}
+}
+function setWind(sc){
+  windLevel=sc.wind||0;
+  if(!AC) return;
+  const t=AC.currentTime;
+  windFilter.frequency.linearRampToValueAtTime(300+(sc.wind||0)*1900, t+2);
+  const chords={dawn:[110,164.8,277.2],day:[130.8,196,261.6],storm:[110,130.8,155.6],fork:[110,130.8,155.6],
+    forest:[87.3,130.8,174.6],river:[92.5,138.6,185],ret:[123.5,146.8,185],gold:[130.8,164.8,196]};
+  const ch=chords[sc.scene]||chords.dawn;
+  pads.forEach((o,i)=>{try{o.frequency.linearRampToValueAtTime(ch[i%ch.length],t+2);}catch(e){}});
+}
+function burst(freq,dur,gain){ if(!AC||muted) return;
+  try{
+    const buf=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+    const s=AC.createBufferSource(); s.buffer=buf;
+    const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=freq;
+    const g=AC.createGain(); g.gain.value=gain;
+    s.connect(f); f.connect(g); g.connect(master); s.start();
+  }catch(e){}
+}
+const FX={
+  thunder(){ flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+    stage.classList.remove('shake-s','shake-b'); void stage.offsetWidth; stage.classList.add('shake-b');
+    burst(140,2.6,.9); setTimeout(()=>{stage.classList.remove('shake-b');},760); },
+  lightning(){ flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+    stage.classList.remove('shake-s','shake-b'); void stage.offsetWidth; stage.classList.add('shake-s');
+    burst(220,1.4,.5); setTimeout(()=>{stage.classList.remove('shake-s');},420); },
+  snap(){ stage.classList.remove('shake-s'); void stage.offsetWidth; stage.classList.add('shake-s');
+    burst(2400,.09,.55); setTimeout(()=>{stage.classList.remove('shake-s');},420); },
+  shake(){ stage.classList.remove('shake-s'); void stage.offsetWidth; stage.classList.add('shake-s');
+    setTimeout(()=>{stage.classList.remove('shake-s');},420); },
+  splash(){ stage.classList.remove('shake-s'); void stage.offsetWidth; stage.classList.add('shake-s');
+    burst(500,.5,.4); setTimeout(()=>{stage.classList.remove('shake-s');},420); }
+};
+function triggerFx(name){ if(FX[name]) FX[name](); }
+
+/* ===================== сцены ===================== */
+let stormLightningTimer=null;
+function applyScene(s){
+  stage.className='sc-'+s.scene;
+  pCfg=s.particles||pCfg;
+  setWind(s);
+  if(stormLightningTimer){clearInterval(stormLightningTimer);stormLightningTimer=null;}
+  if(s.scene==='storm'){
+    stormLightningTimer=setInterval(()=>{ if(!typing && !choicesShown) return;
+      FX.lightning(); },4200);
+  }
+}
+function showChapter(text){
+  chapT.textContent=text; chap.classList.add('show');
+}
+function hideChapter(){ chap.classList.remove('show'); }
+
+function startLine(){
+  pendingLine=false;
+  const s=SCENES[cur]; if(!s) return;
+  const line=s.lines[li]; if(!line) return;
+  if(line.fx) triggerFx(line.fx);
+  typing=true; hint.classList.remove('on');
+  who.innerHTML=line.s?('— '+line.s):''; who.style.color=line.s?(NAMEC[line.s]||'#e8c88a'):'#e8c88a';
+  dlg.className=line.s?'speech':'narr';
+  dlg.textContent='';
+  let i=0;
+  clearTimeout(typeTimer);
+  (function step(){
+    if(i>=line.t.length){ typing=false; typeTimer=null; dlg.innerHTML=hlNames(line.t); hint.classList.add('on'); return; }
+    i++; dlg.textContent=line.t.slice(0,i);
+    const c=line.t[i-1]; let d=26;
+    if('.!?…'.indexOf(c)>=0) d=290; else if(',;:—'.indexOf(c)>=0) d=120;
+    typeTimer=setTimeout(step,d);
+  })();
+}
+function finishLine(){
+  clearTimeout(typeTimer); typeTimer=null;
+  const line=SCENES[cur].lines[li]; if(line) dlg.innerHTML=hlNames(line.t);
+  typing=false; hint.classList.add('on');
+}
+function renderChoices(list){
+  choiceBox.innerHTML=''; choiceBox.style.display='flex'; hint.classList.remove('on');
+  list.forEach(c=>{
+    const b=document.createElement('button'); b.textContent=c.t;
+    b.addEventListener('click',e=>{e.stopPropagation(); choose(c.next);});
+    choiceBox.appendChild(b);
+  });
+}
+function choose(next){
+  choiceBox.style.display='none'; choiceBox.innerHTML='';
+  showScene(next);
+}
+function showScene(id){
+  clearTimeout(typeTimer); clearTimeout(pendingTimer); clearTimeout(chapterTimer);
+  typeTimer=pendingTimer=chapterTimer=null;
+  typing=false; pendingLine=false; choicesShown=false;
+  cur=id; const s=SCENES[id]; li=0;
+  dlg.textContent=''; who.textContent='';
+  choiceBox.innerHTML=''; choiceBox.style.display='none';
+  applyScene(s);
+  if(s.ch){
+    chapterActive=true; showChapter(s.ch);
+    chapterTimer=setTimeout(()=>{ chapterActive=false; hideChapter(); startLine(); },2000);
+  } else {
+    chapterActive=false; hideChapter();
+    pendingLine=true;
+    pendingTimer=setTimeout(()=>{ startLine(); },260);
+  }
+}
+function advance(){
+  if(!started) return;
+  if(chapterActive){ // клик во время заголовка главы: сразу к строке
+    chapterActive=false; clearTimeout(chapterTimer); hideChapter(); startLine(); return;
+  }
+  if(pendingLine){ pendingLine=false; clearTimeout(pendingTimer); startLine(); return; }
+  if(typing){ finishLine(); return; }
+  const s=SCENES[cur]; if(!s) return;
+  if(li<s.lines.length-1){ li++; startLine(); return; }
+  if(choicesShown) return;
+  if(s.choices){ choicesShown=true; renderChoices(s.choices); return; }
+  if(s.next){ showScene(s.next); return; }
+  if(s.end){ showEnd(); return; }
+}
+
+/* ===================== финал ===================== */
+function showEnd(){
+  ui.style.display='none'; hint.classList.remove('on');
+  const es=document.getElementById('endscreen'), nm=document.getElementById('pname'), tx=document.getElementById('endtext');
+  const render=()=>{ const n=(nm.value||'').trim();
+    tx.innerHTML='Эта история была рассказана для '+(n?'<span id="endname">'+n+'</span>':'<span id="endname">тебя</span>')+'.<br>Пусть все твои счёты всегда сходятся.'; };
+  nm.addEventListener('input',render); render();
+  es.style.display='flex';
+}
+document.getElementById('again').addEventListener('click',()=>location.reload());
+
+/* ===================== ввод ===================== */
+document.getElementById('start').addEventListener('click',()=>{
+  initAudio(); if(AC&&AC.state==='suspended') AC.resume();
+  document.getElementById('title-screen').style.display='none';
+  document.getElementById('ded-screen').style.display='flex';
+});
+function goStory(){
+  document.getElementById('ded-screen').style.display='none';
+  ui.style.display='block';
+  started=true; showScene('ch1');
+}
+document.getElementById('dedGo').addEventListener('click',e=>{e.stopPropagation(); goStory();});
+document.getElementById('ded-screen').addEventListener('click',e=>{ if(e.target.closest('button')) return; goStory(); });
+stage.addEventListener('click',e=>{ if(e.target.closest('button,input')) return; advance(); });
+addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='Enter'){ e.preventDefault(); advance(); } });
+document.getElementById('mute').addEventListener('click',e=>{
+  e.stopPropagation(); muted=!muted;
+  if(master) master.gain.value=muted?0:.85;
+  e.target.textContent=muted?'🔇':'🔊';
+});
+</script>
+</body></html>
