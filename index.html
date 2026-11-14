@@ -82,7 +82,7 @@ body{font-family:Georgia,'Times New Roman',serif;color:#e8e4d8;-webkit-user-sele
  text-shadow:0 2px 24px rgba(0,0,0,.8);border-top:1px solid rgba(240,232,212,.4);border-bottom:1px solid rgba(240,232,212,.4);padding:18px 34px}
 /* ===== интерфейс текста ===== */
 #ui{position:absolute;left:0;right:0;bottom:0;z-index:12;padding:0 var(--pad) calc(var(--pad) + 8px);display:none}
-#who{max-width:900px;margin:0 auto;padding:0 4px 7px 26px;font-size:clamp(15px,2.2vw,19px);color:#e8c88a;letter-spacing:.06em;min-height:1.5em;font-family:Georgia,serif;font-style:italic;font-weight:bold;text-shadow:0 2px 10px rgba(0,0,0,.95)}
+#who{max-width:900px;margin:0 auto;padding:0 26px;font-size:clamp(15px,2.2vw,19px);color:#e8c88a;letter-spacing:.06em;min-height:1.5em;font-family:Georgia,serif;font-style:italic;font-weight:700;text-shadow:0 1px 10px rgba(0,0,0,.9)}
 #dlg{max-width:900px;margin:0 auto;background:linear-gradient(rgba(8,10,18,.86),rgba(8,10,18,.94));
  border:1px solid rgba(232,228,216,.16);border-radius:12px;padding:20px 26px;min-height:96px;
  font-size:clamp(16px,2.5vw,21px);line-height:1.62;box-shadow:0 8px 40px rgba(0,0,0,.6)}
@@ -106,17 +106,12 @@ body{font-family:Georgia,'Times New Roman',serif;color:#e8e4d8;-webkit-user-sele
 .btn:hover{background:rgba(232,200,138,.2);box-shadow:0 0 34px rgba(232,200,138,.25)}
 #endscreen{display:none;background:rgba(4,5,10,.82);backdrop-filter:blur(3px)}
 #endtext{font-size:clamp(18px,3vw,26px);font-style:italic;line-height:1.7;max-width:720px}
-#endname{color:#e8c88a;border-bottom:1px dashed rgba(232,200,138,.6);padding:0 6px}
-#pname{margin-top:26px;font-family:Georgia,serif;font-size:clamp(16px,2.4vw,20px);text-align:center;color:#f4f0e4;
- background:rgba(255,255,255,.06);border:1px solid rgba(232,200,138,.4);border-radius:10px;padding:11px 18px;outline:none;width:min(320px,80vw)}
-#pname::placeholder{color:#8f8a9c;font-style:italic}
-#again{margin-top:22px}
-.ded-top{font-size:clamp(14px,2vw,18px);color:#b9b2c4;letter-spacing:.18em}
-.ded-mid{margin-top:10px;font-size:clamp(11px,1.6vw,14px);color:rgba(233,228,216,.55);letter-spacing:.3em;text-transform:uppercase}
-.ded-name{margin-top:18px;font-size:clamp(22px,4vw,36px);color:#e8c88a;letter-spacing:.08em;text-shadow:0 2px 24px rgba(0,0,0,.9)}
-.ded-line{width:min(220px,50vw);border:none;border-top:1px solid rgba(232,200,138,.35);margin:26px auto 0}
-#ded-screen .btn{margin-top:40px}
-#endscreen .ded-name{margin-top:12px}
+.dedwrap{margin-bottom:34px;font-size:clamp(15px,2.2vw,19px);letter-spacing:.14em;color:#cfc8b2}
+.dedsub{margin-top:12px;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#8f8a9c}
+.dedname{margin-top:14px;font-size:clamp(24px,4.5vw,38px);color:#e8c88a;letter-spacing:.08em}
+.endquote{font-size:clamp(18px,3vw,26px);font-style:italic;line-height:1.7;max-width:720px;color:#e8e4d8}
+.endsub{margin-top:18px;font-size:clamp(14px,2vw,18px);font-style:italic;color:#b9b2c4}
+#again{margin-top:26px}
 /* ===== кнопки ===== */
 #mute{position:absolute;top:16px;right:16px;z-index:30;font-size:20px;background:rgba(10,12,22,.6);
  border:1px solid rgba(232,228,216,.25);border-radius:50%;width:44px;height:44px;cursor:pointer;color:#e8e4d8}
@@ -156,20 +151,8 @@ body{font-family:Georgia,'Times New Roman',serif;color:#e8e4d8;-webkit-user-sele
    <p class="sub">история одного табуна</p>
    <button class="btn" id="start">Начать историю</button>
  </div>
- <div class="screen" id="ded-screen" style="display:none">
-   <p class="ded-top">С наилучшими пожеланиями</p>
-   <p class="ded-mid">посвящается</p>
-   <p class="ded-name">Измученному Кошмарами</p>
-   <button class="btn" id="dedGo">К истории</button>
- </div>
  <div class="screen" id="endscreen">
-   <p class="ded-top">С наилучшими пожеланиями</p>
-   <p class="ded-mid">посвящается</p>
-   <p class="ded-name">Измученному Кошмарами</p>
-   <hr class="ded-line">
    <p id="endtext"></p>
-   <p id="endtext"></p>
-   <input id="pname" placeholder="впишите имя здесь" autocomplete="off">
    <button class="btn" id="again">Пройти заново</button>
  </div>
  <button id="mute" title="звук">🔊</button>
@@ -726,8 +709,6 @@ let chapterActive=false, chapterTimer=null, choicesShown=false, started=false;
 
 const stage=document.getElementById('stage');
 const dlg=document.getElementById('dlg'), who=document.getElementById('who');
-const NAMEC={'Пепел':'#9fb4c7','Буран':'#b6c3cf','Искра':'#e8b34b','Искры':'#e8b34b','Ёж':'#8fae7a'};
-function hlNames(t){let out=t;for(const n in NAMEC){out=out.split(n).join('<span style="color:'+NAMEC[n]+'">'+n+'</span>');}return out;}
 const choiceBox=document.getElementById('choices');
 const chap=document.getElementById('chap'), chapT=document.getElementById('chapT');
 const hint=document.getElementById('hint');
@@ -915,13 +896,15 @@ function startLine(){
   const line=s.lines[li]; if(!line) return;
   if(line.fx) triggerFx(line.fx);
   typing=true; hint.classList.remove('on');
-  who.innerHTML=line.s?('— '+line.s):''; who.style.color=line.s?(NAMEC[line.s]||'#e8c88a'):'#e8c88a';
+  who.textContent=line.s?('— '+line.s):'';
+  var WCOL={'Пепел':'#a9c2d8','Буран':'#c3cdd6','Искра':'#e8b34b','Ёж':'#9dbd84'};
+  who.style.color=line.s?(WCOL[line.s]||'#e8c88a'):'#e8c88a';
   dlg.className=line.s?'speech':'narr';
   dlg.textContent='';
   let i=0;
   clearTimeout(typeTimer);
   (function step(){
-    if(i>=line.t.length){ typing=false; typeTimer=null; dlg.innerHTML=hlNames(line.t); hint.classList.add('on'); return; }
+    if(i>=line.t.length){ typing=false; typeTimer=null; hint.classList.add('on'); return; }
     i++; dlg.textContent=line.t.slice(0,i);
     const c=line.t[i-1]; let d=26;
     if('.!?…'.indexOf(c)>=0) d=290; else if(',;:—'.indexOf(c)>=0) d=120;
@@ -930,7 +913,7 @@ function startLine(){
 }
 function finishLine(){
   clearTimeout(typeTimer); typeTimer=null;
-  const line=SCENES[cur].lines[li]; if(line) dlg.innerHTML=hlNames(line.t);
+  const line=SCENES[cur].lines[li]; if(line) dlg.textContent=line.t;
   typing=false; hint.classList.add('on');
 }
 function renderChoices(list){
@@ -980,10 +963,10 @@ function advance(){
 /* ===================== финал ===================== */
 function showEnd(){
   ui.style.display='none'; hint.classList.remove('on');
-  const es=document.getElementById('endscreen'), nm=document.getElementById('pname'), tx=document.getElementById('endtext');
-  const render=()=>{ const n=(nm.value||'').trim();
-    tx.innerHTML='Эта история была рассказана для '+(n?'<span id="endname">'+n+'</span>':'<span id="endname">тебя</span>')+'.<br>Пусть все твои счёты всегда сходятся.'; };
-  nm.addEventListener('input',render); render();
+  const es=document.getElementById('endscreen'), tx=document.getElementById('endtext');
+  tx.innerHTML='<div class="dedwrap">С наилучшими пожеланиями<div class="dedsub">посвящается</div><div class="dedname">Измученному Кошмарами</div></div>'
+    +'<div class="endquote">«Надо бы так устроить жизнь, чтобы каждое мгновение в ней было значительно»</div>'
+    +'<div class="endsub">Пусть все твои счёты всегда сходятся.</div>';
   es.style.display='flex';
 }
 document.getElementById('again').addEventListener('click',()=>location.reload());
@@ -992,15 +975,9 @@ document.getElementById('again').addEventListener('click',()=>location.reload())
 document.getElementById('start').addEventListener('click',()=>{
   initAudio(); if(AC&&AC.state==='suspended') AC.resume();
   document.getElementById('title-screen').style.display='none';
-  document.getElementById('ded-screen').style.display='flex';
-});
-function goStory(){
-  document.getElementById('ded-screen').style.display='none';
   ui.style.display='block';
   started=true; showScene('ch1');
-}
-document.getElementById('dedGo').addEventListener('click',e=>{e.stopPropagation(); goStory();});
-document.getElementById('ded-screen').addEventListener('click',e=>{ if(e.target.closest('button')) return; goStory(); });
+});
 stage.addEventListener('click',e=>{ if(e.target.closest('button,input')) return; advance(); });
 addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='Enter'){ e.preventDefault(); advance(); } });
 document.getElementById('mute').addEventListener('click',e=>{
